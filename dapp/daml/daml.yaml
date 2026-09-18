@@ -1,0 +1,7 @@
+sdk-version: 3.4.11
+name: note
+source: .
+version: 1.0.0
+dependencies:
+  - daml-prim
+  - daml-stdlib

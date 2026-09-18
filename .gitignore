@@ -55,3 +55,6 @@ playwright-report/
 
 # vitest coverage output
 coverage/
+
+# Daml build output
+.daml/

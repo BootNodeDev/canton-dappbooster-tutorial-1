@@ -1,0 +1,8 @@
+{
+  "name": "@canton-dappbooster-tutorial/daml",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "LANG=C.UTF-8 dpm build"
+  }
+}

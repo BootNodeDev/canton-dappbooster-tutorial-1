@@ -5,6 +5,7 @@ packages:
   - canton-dappbooster
   - canton-theme
   - dapp/frontend
+  - dapp/daml
 allowBuilds:
   better-sqlite3: true
   cbor-extract: true
