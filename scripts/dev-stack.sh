@@ -2,8 +2,8 @@
 #
 # dev-stack.sh — start or stop the local Canton dApp stack.
 #
-# The same sequence as README.md, in one command: the LocalNet, the DAR, the
-# vesting bootstrap, the Wallet Gateway and the dApp.
+# The same sequence as README.md, in one command: the LocalNet, the Wallet
+# Gateway and the dApp.
 #
 # The LocalNet belongs to @bootnodedev/canton-barebones, pinned in the root
 # package.json and driven from the directory holding its config. `up` scaffolds that
@@ -19,7 +19,7 @@
 #   ./scripts/dev-stack.sh menu [dir]  # same as above
 #   ./scripts/dev-stack.sh install     # install + link every workspace from the repo root (pnpm install)
 #   ./scripts/dev-stack.sh docker-up   # macOS only: launch Docker Desktop, wait for the daemon
-#   ./scripts/dev-stack.sh up [dir]    # start the stack (LocalNet, DAR, bootstrap, gateway, dApp)
+#   ./scripts/dev-stack.sh up [dir]    # start the stack (LocalNet, gateway, dApp)
 #   ./scripts/dev-stack.sh down [dir]  # stop the gateway + the dApp dev server, stop the LocalNet
 #   ./scripts/dev-stack.sh docker-down # macOS only: quit Docker Desktop
 #   ./scripts/dev-stack.sh status [dir] # show what is currently running
@@ -51,11 +51,6 @@ GW_PID="$RUN_DIR/wallet-gateway.pid"
 
 # Resolved in up(), once ./.env has been read.
 JSON_API_URL=""
-
-# Derive the DAR name from daml.yaml so renames and version bumps need no edit here.
-DAML_DIR="dapp/daml"
-DAR_NAME="$(awk '/^name:/{n=$2} /^version:/{v=$2} END{print n"-"v".dar"}' "$DAML_DIR/daml.yaml")"
-DAR_PATH="$DAML_DIR/.daml/dist/$DAR_NAME"
 
 # Flags are pulled out before the positional arguments, so `up --json <dir>` and
 # `up <dir> --json` both work.
@@ -94,7 +89,7 @@ warn() { printf '%s %s\n' "$P_WARN" "$*" >&3; }
 die()  { json_event error "$*"; printf '%s %s\n' "$P_ERR" "$*" >&2; exit 1; }
 
 # Keep in step with the `step` calls in up(), which are the list.
-STEP_TOTAL=10
+STEP_TOTAL=7
 STEP_INDEX=0
 STEP_NAME=stack
 STEP_START=$SECONDS
@@ -139,11 +134,6 @@ tick_end() {
   TICK_LAST=0
   if [ "$HUMAN_TTY" = 1 ]; then printf '\r\033[2K' >&5; fi
 }
-
-# A half-parsed daml.yaml yields a name like '-.dar', which would deploy nothing.
-case "$DAR_NAME" in
-  -.dar | -*.dar | *-.dar) die "Could not derive DAR name from $DAML_DIR/daml.yaml (got '$DAR_NAME')" ;;
-esac
 
 ACTION="${1:-menu}"
 LOCALNET_ARG="${2:-}"
@@ -288,12 +278,12 @@ up() {
   docker info >/dev/null 2>&1 \
     || die "Docker daemon not reachable. Start Docker first (menu: docker-up, the Docker app, or your CLI), then run 'up'."
 
-  # The DAR build needs dpm; check here so a missing SDK fails before the
+  # Building a DAR needs dpm; check here so a missing SDK fails before the
   # containers come up rather than after.
   command -v dpm >/dev/null 2>&1 \
     || die "dpm not found on PATH. Install the DAML SDK (3.4.11), then run 'up'."
 
-  # ./.env is the mint recipe, the DAR upload token and the bootstrap token.
+  # ./.env is the mint recipe and the DAR upload token.
   # Minting is offline, so this needs nothing running.
   step env "Preparing .env and the participant token..."
   [ -f .env ] || { log "Creating .env from .env.example"; cp .env.example .env; }
@@ -336,25 +326,14 @@ up() {
     || die "Could not prepare the LocalNet config in $LOCALNET_DIR."
 
   # `canton-barebones start` is `docker compose up -d`, so it returns as soon as the
-  # containers exist; Splice takes minutes more to answer, and the DAR upload below
-  # would die on a refused connection without the wait that follows.
+  # containers exist; Splice takes minutes more to answer, so the wait below is what
+  # keeps the next step from meeting a refused connection.
   step localnet "Starting the LocalNet from $LOCALNET_DIR..."
   localnet start || die "LocalNet did not start."
 
   step json-api "Waiting for the app-user JSON API on $JSON_API_URL..."
   wait_for_http 300 "$JSON_API_URL/v2/version" "app-user JSON API" any \
     || die "The LocalNet is up but its JSON API never answered. Check 'canton-barebones logs' in $LOCALNET_DIR, then run 'up' again."
-
-  # The build fetches the Splice DARs amulet-vesting data-depends on the first time,
-  # and after a Splice bump.
-  step build-dar "Building the $DAR_NAME DAR..."
-  pnpm run build-dar || die "The $DAR_NAME build failed."
-
-  step deploy-dar "Deploying $DAR_PATH to Canton..."
-  pnpm run deploy-dar -- "$DAR_PATH" || die "Uploading $DAR_PATH to Canton failed."
-
-  step bootstrap "Bootstrapping the vesting operator and factory..."
-  pnpm run bootstrap || die "Bootstrapping the vesting operator and factory failed."
 
   step wallet-gateway "Starting the Wallet Gateway -> http://localhost:3030"
   start_wallet_gateway
@@ -455,7 +434,7 @@ menu() {
     "install + link every workspace"
     "start Docker Desktop (macOS)"
     "quit Docker Desktop (macOS)"
-    "start LocalNet, deploy DAR, bootstrap, gateway, dApp"
+    "start LocalNet, gateway, dApp"
     "stop the gateway + dApp dev server, stop the LocalNet"
     "exit"
   )

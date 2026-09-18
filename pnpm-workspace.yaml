@@ -1,20 +1,16 @@
 # allows to use local package folders if versions are within range, fetch from npm if not
 linkWorkspacePackages: true
-
 packages:
   - canton-connect
   - canton-dappbooster
   - canton-theme
-  - dapp/daml
   - dapp/frontend
-
 allowBuilds:
   better-sqlite3: true
   cbor-extract: true
   esbuild: true
   protobufjs: true
   secp256k1: true
-
 # Added by pnpm when the Wallet Gateway went in: those versions were published the same day and
 # the minimum-release-age policy refuses them. Drop an entry once its version has aged past it.
 minimumReleaseAgeExclude:
