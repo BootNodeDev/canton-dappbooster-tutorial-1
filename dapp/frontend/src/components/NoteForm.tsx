@@ -5,7 +5,7 @@ import { createNoteCommand } from '@/notes'
 
 export const NoteForm = (): React.JSX.Element | null => {
   const { account } = useAccount()
-  const { execute, isPending, error } = useExecute()
+  const { execute, error } = useExecute()
   const [reader, setReader] = useState('')
   const [text, setText] = useState('')
 
@@ -13,9 +13,11 @@ export const NoteForm = (): React.JSX.Element | null => {
     return null
   }
 
-  const submit = async (event: FormEvent): Promise<void> => {
+  const submit = (event: FormEvent): void => {
     event.preventDefault()
-    await execute({ commands: [createNoteCommand(account.partyId, reader, text)] })
+    // The wallet opens its own window to approve this. The note appears in the list once the
+    // ledger has it.
+    void execute({ commands: [createNoteCommand(account.partyId, reader, text)] })
     setText('')
   }
 
@@ -31,10 +33,10 @@ export const NoteForm = (): React.JSX.Element | null => {
       />
       <button
         className="rounded bg-primary px-4 py-2 text-primary-fg disabled:opacity-50"
-        disabled={isPending || reader === '' || text === ''}
+        disabled={reader === '' || text === ''}
         type="submit"
       >
-        {isPending ? 'Sending…' : 'Send'}
+        Send
       </button>
       {error !== undefined && <p className="text-sm text-red-500">{error.message}</p>}
     </form>
