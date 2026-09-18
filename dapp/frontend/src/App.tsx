@@ -12,7 +12,12 @@ const connectConfig: CantonConnectConfig = {
 export const App = (): React.JSX.Element => (
   <ThemeProvider>
     <CantonConnectProvider config={connectConfig}>
-      <main className="p-8">Notes</main>
+      <div className="min-h-screen bg-bg text-fg">
+        <header className="flex items-center justify-between border-b border-border px-6 py-4">
+          <span className="text-lg font-semibold">Notes</span>
+        </header>
+        <main className="mx-auto max-w-2xl px-6 py-10" />
+      </div>
     </CantonConnectProvider>
   </ThemeProvider>
 )
