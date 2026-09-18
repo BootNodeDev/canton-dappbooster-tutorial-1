@@ -1,0 +1,92 @@
+{
+  "name": "@bootnodedev/canton-dappbooster",
+  "version": "0.4.0",
+  "description": "Reusable UI components for Canton dApps",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BootNodeDev/canton-dappbooster.git",
+    "directory": "canton-dappbooster"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsdown",
+    "lint:fix": "biome check --write",
+    "lint": "biome check",
+    "prepack": "tsdown",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./connect": {
+        "types": "./dist/connect.d.ts",
+        "import": "./dist/connect.js"
+      }
+    }
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./connect": {
+      "development": "./src/connect.ts",
+      "types": "./dist/connect.d.ts",
+      "import": "./dist/connect.js"
+    }
+  },
+  "imports": {
+    "#src/*": {
+      "types": [
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ],
+      "default": "./src/*"
+    }
+  },
+  "devDependencies": {
+    "@bootnodedev/canton-connect": "^0.4.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "jsdom": "^30.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tsdown": "^0.23.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5",
+    "vitest": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@bootnodedev/canton-connect": "^0.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@zag-js/dialog": "^1.43.0",
+    "@zag-js/react": "^1.43.0"
+  }
+}

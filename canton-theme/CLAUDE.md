@@ -1,0 +1,200 @@
+# Agent Configuration — canton-theme
+
+This file applies only to `canton-theme/`. For monorepo-wide rules see [`../CLAUDE.md`](../CLAUDE.md);
+for the L2/L3 seam this package sits on, [`../canton-dappbooster/architecture.md`](../canton-dappbooster/architecture.md).
+Deltas for this package only are below.
+
+## Scope
+
+Plain CSS. No JavaScript, no build step, no dependencies. Two independently consumable files:
+
+- `src/tokens.css` — the `--cnc-*` custom properties. This file *is* the token contract; do not
+  mirror its contents into prose anywhere.
+- `src/default.css` — prestyled defaults selecting on the part classes and states each component
+  declares in its `anatomy.ts`.
+
+## Layering
+
+Both files go entirely inside `@layer cnc`. Unlayered CSS beats layered CSS whatever the
+specificity, so a consumer overrides anything here with a plain rule and it holds whether they
+import us first or last. Import order must never be load-bearing.
+
+Never use `!important`. Inside a layer it inverts: a layered `!important` beats an unlayered one, so
+a single one here would be unbeatable from outside the package.
+
+## Naming a token
+
+`--cnc-<role>[-<variant>]`, lower-kebab.
+
+- The `--cnc-` prefix is the public contract. An unprefixed property is not themeable and must not
+  appear in `default.css`.
+- **Name the role, never the appearance or the component.** `--cnc-text-muted`, not `--cnc-grey`
+  (appearance drifts when the palette changes) and not `--cnc-identifier-copy` (a token every
+  component can read is the point).
+- Colour roles: `bg`, `surface`, `text`, `border`, `overlay`, `accent`, `swatch`, and the state roles
+  `success`, `warning`, `danger`. Shape roles: `radius`, `space`, `font-mono`. Motion role:
+  `duration`. Elevation role: `shadow`. `overlay` and `shadow` are the two roles whose values are
+  translucent by definition: one is the scrim a layer above the page sits on, the other the cast it
+  throws onto the page it floats over.
+- `space` is distance inside a component — gaps between its parts, padding within them — never
+  layout between components: the page owns that and never reads our tokens. It is the one role with
+  a size scale, `-xs` through `-xl` around an unsuffixed default, on the 4px grid the rest of the
+  industry uses. Reach for a step first. A distance no step lands on is a multiple of `-xs`, the
+  grid unit — `calc(var(--cnc-space-xs) * 2.5)` — and never a literal, so the scale stays the only
+  input and retuning it moves everything derived from it. One derivation form throughout: two
+  spellings of 12px read as two different decisions.
+- `swatch` is the one numbered role: `--cnc-swatch-1` … `--cnc-swatch-8` and their `-fg`, a
+  categorical palette for a placeholder standing in for artwork that does not exist (a token with no
+  logo). Anything picking one hashes an identifier to the index and puts it in a `data-*`; the
+  colour never crosses back into JavaScript, so it still follows the mode.
+- Variants modify a role:
+  - `-muted` / `-strong` — same kind as the base, less or more emphasis. `--cnc-text-muted` is
+    still a text colour; `--cnc-surface-muted` is still a surface. Emphasis is a colour axis, so
+    neither variant applies to a shape role. A shape role that needs more than one value takes the
+    size steps below instead.
+  - `-xs` / `-sm` / `-lg` / `-xl` — steps of a scale around the unsuffixed default, which is the
+    middle and stays the one to reach for first. `space` and `duration` have them; `radius` does
+    not, because a second corner is a decision no component has earned.
+  - `-subtle` — a pale *fill* derived from a role whose base value is a foreground colour, for
+    badges and callouts. `--cnc-danger` is the text, `--cnc-danger-subtle` the wash behind it.
+  - `-hover` — the same role under interaction.
+  - `-fg` — the text colour that sits *on* that role's fill (`--cnc-accent-fg` over `--cnc-accent`).
+- Colour, shape and motion. `space` and `duration` are the only scales and both are deliberately
+  short; there is no typography scale, and adding one is a contract decision, not a convenience.
+- `duration` is how long a state change takes, not what it looks like getting there: the easing
+  curve stays a literal until a component needs a second one. The default is the hover-and-focus
+  band; reach past it only for something that moves rather than recolours.
+- Every size token is `rem`, so the grid follows the reader's root font size. `px` survives only
+  where a value must not scale: hairline borders and focus outlines, which round to a blurred or
+  vanishing fraction of a device pixel in `rem`.
+
+## When a token earns existence
+
+The role grid above is declared ahead of use, in full and in both modes. A component author picks a
+name off it instead of inventing one, which is the only way `--cnc-surface-muted` and
+`--cnc-accent-subtle` end up meaning the same thing in two components written months apart. So
+`tokens.css` legitimately declares tokens `default.css` does not yet read.
+
+What must earn its existence is a name *outside* the grid — a new role, a new variant, or a
+component-specific value. That is a contract decision: it is public the moment it ships, and we keep
+it forever. Prefer an existing role; if none fits, add the variant to the grid across every role it
+makes sense for, not just the one component that needed it.
+
+## Dark mode
+
+Dark values hang off `[data-theme="dark"]`, never `@media (prefers-color-scheme: dark)` alone. A
+runtime that lets the user choose light *on a dark OS* has to be able to win, and it cannot override
+a media query. The attribute must decide in both directions. That runtime is `<ThemeProvider>` in
+[`../canton-dappbooster`](../canton-dappbooster); the attribute is the whole contract between them,
+and this package stays free of JavaScript.
+
+Every token in `:root` needs a dark counterpart unless it is mode-independent by construction
+(radius, space, duration, font stack).
+
+`color-scheme` follows the same rule and is the one non-token declaration here: it hands the browser
+the mode for the surfaces we cannot style (scrollbars, form controls, the caret). One explicit value
+per mode. Never `color-scheme: light dark`, which defers to the OS and so undoes the attribute in
+exactly the case the attribute exists for.
+
+## Writing default.css
+
+- No `var()` fallbacks. `default.css` opens by importing `tokens.css`, so every default is declared
+  once; a fallback would be a second copy that drifts and that nothing checks.
+- Select only on parts and states a component actually renders. `anatomy.ts` in
+  [`../canton-dappbooster`](../canton-dappbooster) is the source of truth; never invent a selector.
+- Where every entry of a selector list repeats the same trailing part, hoist it into `:is()` rather
+  than spelling the shared part once per entry. A list whose entries share no suffix
+  (`.cnc-token-input__token, .cnc-token-select-dialog__favorite`) stays a list, and a list only some
+  of whose entries share one is left alone: a half-hoist reads as two rules fused rather than one.
+- **Hoist only entries of equal specificity.** `:is()` takes the specificity of its most specific
+  argument and hands it to every branch, so one `.cnc-token-input__token[data-interactive]` in the
+  list silently raises the six plain classes beside it from `(0,2,0)` to `(0,3,0)` and they start
+  beating overrides written against them. An attribute-carrying entry stays written out on its own
+  line beside the `:is()`, which is why the `:focus-visible` rule has two selectors.
+- **Never nest with `&`,** however much repetition it would spare. `pnpm check:anatomy` harvests
+  class names by regex over each rule's own selector text, so a nested `&:disabled` contributes no
+  class and reports at the block head instead of the rule. Flat selectors are also what keeps
+  `rg cnc-connect-button` returning every rule that touches it, which is how the two rules above are
+  audited at all.
+- Put colour on the root part, never on the inner value part, so a consumer's utility class on the
+  root still wins.
+- Never declare `font-size` on a primitive that can sit inside a heading, a row, or a table cell.
+  Let it inherit, and size sub-parts in `em` so they scale with whatever they land in.
+- A field nested in a card takes `--cnc-border-strong`: it shares the card's surface, so the card's
+  own border colour on it reads as the card edge rather than as a field.
+- A wide field shows focus and invalidity by tinting its own border under a translucent wash, not by
+  adding a detached solid ring. The wash carries the thickness contrast needs; a 2px ring standing
+  off a field that wide reads as an error even when nothing is wrong.
+- The token part is `align-self: stretch`, so the symbol takes its height from the amount field
+  beside it instead of from its own padding, and the two stay level when the field is resized.
+- The token select's list is a fixed `20rem`, expressed as `flex: 0 1 20rem` with `min-height: 0` and
+  never as `height`: a flex item that cannot shrink pushes the card past its own `max-height` on a
+  short viewport, and the card has no scroll of its own to catch the spill. It is `rem` and not `px`
+  because the rows it windows are measured in `rem` too, from `ROW_HEIGHT_REM`.
+- The token select's list takes `overscroll-behavior: contain`. Reaching either end of a scroller
+  inside a dialog must not start scrolling the page behind it, which the user cannot see moving.
+- The token select's favourites are ruled off from the list by their own `border-bottom`, not a
+  separate element, and the margin above matches the padding below so the rule sits centred in the
+  gap it divides.
+- The favourites row wraps and never scrolls. `MAX_FAVORITES` in
+  [`../canton-dappbooster`](../canton-dappbooster) is what bounds its height, so the row cannot push
+  the card past its own `max-height` — which is the spill the list's `flex: 0 1 20rem` exists to
+  prevent. Do not give this row a scroller to make room for more chips; raise or keep the cap.
+- The favourite chip and the token field's own token part share one rule, because they are the same
+  object rendered twice. What differs is a chip's border and cursor, and that the field's part
+  stretches to the amount input beside it.
+- The favourite chip's logo is selected as `.cnc-token-logo.cnc-token-select-dialog__favorite-logo`,
+  a compound and not a descendant, because both classes land on the same element and the tie with
+  `.cnc-token-logo` further down would otherwise go to source order.
+- Shrinking that disc to `1.5rem` leaves `[data-fallback]`'s `0.6875rem` font-size, which was sized
+  for the `2rem` disc, so a 3-letter placeholder ("USD") can touch the disc edge in a wide font.
+  Accepted, and it is the common case rather than the rare one: a token with artwork is the
+  exception in the lists we have. Scale the font-size here when it starts clipping.
+- The favourite chip hovers to `--cnc-accent-subtle`, not to `--cnc-surface` the way a list row does.
+  A row sits on `--cnc-surface-muted` so `--cnc-surface` reads as emphasis; a chip sits on the card,
+  which already is `--cnc-surface`, so the same value would erase the chip instead. That wash was
+  the token select's selected-row fill until the current-row marking was dropped, so a consumer who
+  tuned it to read as "your current token" now meets it under the pointer.
+- The token select's rows are sized by L2, from `ROW_HEIGHT_REM`, and the windowing maths multiplies
+  it. A theme may restyle a row; it may not resize one. A height, a border or a `min-height` here
+  puts the sizer and the row offsets into silent disagreement and rows drift out of their slots.
+- The list takes no `scroll-behavior: smooth`. Scroll writes go straight to `scrollTop` and the
+  rendered window is computed for the destination, so a smooth scroll would animate against a
+  window that has already arrived.
+- The token select's "no tokens found" part renders only while the list is empty, so it needs no
+  rule collapsing it. What announces the change is a separate live region the component hides
+  inline and out of flow; never style it with `display: none`, which drops a live region out of the
+  accessibility tree and silences the announcement it exists for.
+- Depth is set once, on the token select dialog's backdrop and positioner at `100`, because those
+  sit above the page instead of in it. Both are portalled, so document order cannot decide it: a
+  host's own stacking context — a sticky header, say — otherwise renders over them. Everything else
+  stacks in document order, and a second value means components can fight over depth, so treat
+  adding one as a contract decision.
+- **A part Zag marks `hidden` needs its own `[hidden] { display: none }` rule here.** Zag closes a
+  panel by setting the `hidden` attribute and leaves the hiding to CSS, but `[hidden]` only carries
+  `display: none` in the user-agent stylesheet, which any author `display` loses to whatever the
+  layer or the specificity. So a part with its own `display` keeps the closed panel on screen for a
+  consumer whose reset does not re-declare `[hidden]`; ours only looked right because
+  `dapp/frontend` pulls in Tailwind's preflight.
+- The dialog's `z-index` goes on its positioner and its backdrop, which is only safe because its
+  machine does not use Zag's popper. A popper-positioned part takes it on the *content* instead: the
+  popper owns the positioner's inline style and copies the content's computed `z-index` onto it as
+  `--z-index`, so a rule on the positioner is overwritten with `auto`. Nothing here is
+  popper-positioned today, so that half is for whoever adds the first one.
+- A `@keyframes` name is global whatever layer declares it, so it carries the `cnc-` prefix like a
+  token does and is public the moment it ships. Its duration comes off the `duration` scale, by
+  `calc()` where no step fits, for the same reason every other distance does.
+- **Anything that moves ships its own `prefers-reduced-motion: reduce` rule, right beside it.** The
+  package is consumed as a stylesheet with no reset assumed, so a consumer's blanket
+  `animation-duration: 0.01ms !important` is not ours to count on, and we cannot write that rule
+  ourselves: `!important` inside a layer is unbeatable from outside. Kill the animation instead, and
+  leave the meaning to something that is not motion — the connect spinner stops, and the button
+  still reads "Connecting…". Recolouring transitions need no guard; the preference is about motion.
+- Comments: root [`../CLAUDE.md`](../CLAUDE.md) allows only section separators. A stylesheet fact
+  worth keeping is written into this file instead, under the section that owns it.
+
+## Validation
+
+- `pnpm lint` from the repo root (Biome checks CSS; there is no local Biome config).
+- Kit components render against this theme in `dapp/frontend` on port 3012, which is where a
+  palette change gets looked at.

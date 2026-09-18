@@ -1,0 +1,45 @@
+{
+  "name": "cn-dappbooster",
+  "private": true,
+  "version": "0.4.0",
+  "type": "module",
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "app:dev": "pnpm -C dapp/frontend run dev",
+    "bootstrap": "node scripts/bootstrap-vesting.mjs",
+    "build-dar": "pnpm -C dapp/daml run build",
+    "build": "pnpm -r run --if-present build",
+    "check:anatomy": "node kit/check-anatomy.mjs",
+    "check:versions": "node kit/check-versions.mjs",
+    "deploy-dar": "bash scripts/deploy-dar.sh",
+    "docs:build": "typedoc --options kit/typedoc.json",
+    "docs:check": "typedoc --options kit/typedoc.json --emit none && node kit/docs-check.mjs",
+    "knip": "knip",
+    "lint:fix": "biome check --write",
+    "lint": "biome check --error-on-warnings",
+    "mint-token": "node scripts/mint-token.mjs ledger-api-user",
+    "prepare": "husky",
+    "release": "pnpm -r --filter './canton-*' publish --no-git-checks",
+    "release:dry": "pnpm -r --filter './canton-*' publish --dry-run --no-git-checks",
+    "release:version": "node kit/release-version.mjs",
+    "test": "pnpm -r run --if-present test && node --test \"scripts/**/*.test.mjs\" \"kit/**/*.test.mjs\"",
+    "typecheck": "pnpm -r run --if-present typecheck",
+    "wallet-gateway": "mkdir -p .wallet-gateway && wallet-gateway -c ./wallet-gateway.config.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@bootnodedev/canton-barebones": "0.5.0",
+    "@canton-network/wallet-gateway-remote": "1.11.3",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "husky": "^9.1.7",
+    "knip": "6.35.1",
+    "lint-staged": "^17.0.4",
+    "postcss": "^8.5.26",
+    "typedoc": "^0.28.20",
+    "typescript": "^5.9.3"
+  }
+}

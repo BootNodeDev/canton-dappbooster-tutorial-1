@@ -1,0 +1,202 @@
+// Mock ProviderAdapter — lets a dApp or test connect with no real wallet installed.
+// Only the connect flow is answered; everything else throws rather than fake a result.
+
+import type {
+  dappAPI,
+  ProviderAdapter,
+  ProviderId,
+  ProviderType,
+  WalletInfo,
+} from '@canton-network/dapp-sdk'
+import type { Account } from '#src/types'
+
+// Derived from ProviderAdapter/dappAPI so this file stays on the one dapp-sdk dependency.
+/** The provider object an adapter hands out, which is what this mock has to satisfy. */
+type MockProvider = ReturnType<ProviderAdapter['provider']>
+/** One JSON-RPC request the provider is asked to answer. */
+type RequestArg = Parameters<MockProvider['request']>[0]
+/** What answering a request resolves to. */
+type RequestResult = Awaited<ReturnType<MockProvider['request']>>
+/** A subscriber to one of the provider's push events. */
+type Listener = Parameters<MockProvider['on']>[1]
+
+/**
+ * One canned account the mock adapter reports. Only `partyId` is required; the rest is filled with
+ * obviously fake values, so nothing downstream mistakes a mock account for a real one.
+ *
+ * @category Utilities
+ */
+export interface MockAccount {
+  partyId: string
+  name?: string
+  publicKey?: string
+}
+
+/**
+ * Wiring for {@link createMockAdapter}. `id` defaults to `'mock'`, which is the provider id
+ * `createAutoPicker('mock')` matches; `accounts` defaults to one generated account and treats the
+ * first entry as primary; `networkId` defaults to `canton:local`.
+ *
+ * @example
+ * const options: CreateMockAdapterOptions = { id: 'mock', accounts: [{ partyId }] }
+ *
+ * @category Utilities
+ */
+export interface CreateMockAdapterOptions {
+  id?: string
+  accounts?: MockAccount[]
+  networkId?: string
+}
+
+/**
+ * What {@link createMockAdapter} returns: a `ProviderAdapter` plus `emit`, which simulates the
+ * wallet pushing an event to subscribers of `provider().on(...)`.
+ *
+ * @category Utilities
+ */
+export interface MockAdapter extends ProviderAdapter {
+  emit: (event: string, payload: unknown) => void
+}
+
+const DEFAULT_PROVIDER_ID: ProviderId = 'mock'
+const DEFAULT_NAME = 'Mock Wallet'
+const DEFAULT_DESCRIPTION = 'Mock wallet for dev and tests — no real signing, never a live wallet'
+
+// Account requires status/signingProviderId; neither has a real mock equivalent.
+const MOCK_ACCOUNT_STATUS: dappAPI.WalletStatus = 'allocated'
+const MOCK_SIGNING_PROVIDER_ID: dappAPI.SigningProviderId = 'mock'
+// Obviously fake, not '' — a presence check downstream shouldn't mistake this for real.
+const MOCK_PUBLIC_KEY: dappAPI.PublicKey = 'mock-public-key'
+// The entry type requires one, so the mock reports it rather than leaving a consumer to default it.
+const MOCK_NETWORK_ID: dappAPI.NetworkId = 'canton:local'
+
+/** The single mock account `createMockAdapter` reports when the caller supplies none. */
+const defaultAccounts = (providerId: ProviderId): MockAccount[] => [
+  { partyId: `${providerId}::1220abcd` },
+]
+
+/** Shapes one `MockAccount` into the `Account` the mock adapter's `listAccounts` returns. */
+const toAccount = (
+  account: MockAccount,
+  primary: dappAPI.Primary,
+  networkId: dappAPI.NetworkId | undefined,
+): Account => ({
+  primary,
+  partyId: account.partyId,
+  status: MOCK_ACCOUNT_STATUS,
+  hint: account.name ?? account.partyId,
+  publicKey: account.publicKey ?? MOCK_PUBLIC_KEY,
+  // namespace is the partyId's fingerprint segment, the real party-hint::fingerprint convention.
+  namespace: account.partyId.split('::')[1] ?? account.partyId,
+  networkId: networkId ?? MOCK_NETWORK_ID,
+  signingProviderId: MOCK_SIGNING_PROVIDER_ID,
+})
+
+/**
+ * The adapter `createMockAdapter` returns: it announces itself like an installed wallet and
+ * answers the connect flow from canned accounts, with no wallet present.
+ */
+class MockProviderAdapter implements ProviderAdapter {
+  readonly providerId: ProviderId
+  readonly name = DEFAULT_NAME
+  readonly type: ProviderType = 'browser'
+
+  private readonly accounts: Account[]
+  private connected = false
+  private listenerMap: Record<string, Listener[]> = {}
+
+  constructor(options: CreateMockAdapterOptions) {
+    this.providerId = options.id ?? DEFAULT_PROVIDER_ID
+
+    const accounts = options.accounts ?? defaultAccounts(this.providerId)
+    this.accounts = accounts.map((account, index) =>
+      toAccount(account, index === 0, options.networkId),
+    )
+  }
+
+  // Name and description both say "mock" so the picker never reads as a real wallet.
+  getInfo(): WalletInfo {
+    return {
+      providerId: this.providerId,
+      name: this.name,
+      type: this.type,
+      description: DEFAULT_DESCRIPTION,
+    }
+  }
+
+  async detect(): Promise<boolean> {
+    return true
+  }
+
+  provider(): MockProvider {
+    return this
+  }
+
+  teardown(): void {}
+
+  // Connect flow only — a canned execute/sign result would read as real; see createFakeWallet.
+  private readonly handlers: Partial<Record<RequestArg['method'], () => RequestResult>> = {
+    connect: () => {
+      this.connected = true
+      return { isConnected: true, isNetworkConnected: true }
+    },
+    disconnect: () => {
+      this.connected = false
+      return null
+    },
+    status: () => ({
+      provider: { id: this.providerId, providerType: this.type },
+      connection: { isConnected: this.connected, isNetworkConnected: true },
+    }),
+    listAccounts: () => this.accounts,
+  }
+
+  async request(args: RequestArg): Promise<RequestResult> {
+    const handler = this.handlers[args.method]
+
+    if (handler === undefined) {
+      throw new Error(`mock adapter does not implement '${args.method}'`)
+    }
+
+    return handler()
+  }
+
+  // Listener is EventListener<unknown> — the same erased storage type AbstractProvider uses.
+  on: MockProvider['on'] = (event, listener) => {
+    const listeners = this.listenerMap[event] ?? []
+    listeners.push(listener as Listener)
+    this.listenerMap[event] = listeners
+
+    return this
+  }
+
+  emit: MockProvider['emit'] = (event, ...args) => {
+    for (const listener of this.listenerMap[event] ?? []) {
+      listener(...args)
+    }
+
+    return true
+  }
+
+  removeListener: MockProvider['removeListener'] = (event, listenerToRemove) => {
+    this.listenerMap[event] = (this.listenerMap[event] ?? []).filter(
+      (listener) => listener !== listenerToRemove,
+    )
+
+    return this
+  }
+}
+
+/**
+ * Answers the connect flow with canned data, so `CantonConnectProvider` runs with no wallet
+ * installed; pass it via `CantonConnectConfig.additionalAdapters`. Anything outside that flow
+ * throws naming the method; a canned result would be indistinguishable from a real one. Reach for
+ * `createFakeWallet` instead to exercise the SDK's real extension transport.
+ *
+ * @example
+ * const config = { appName: 'Vesting', additionalAdapters: [createMockAdapter()] }
+ *
+ * @category Utilities
+ */
+export const createMockAdapter = (options: CreateMockAdapterOptions = {}): MockAdapter =>
+  new MockProviderAdapter(options)
