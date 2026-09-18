@@ -3,6 +3,7 @@ import { ThemeProvider } from '@bootnodedev/canton-dappbooster'
 import { WalletButton } from '@bootnodedev/canton-dappbooster/connect'
 import { RemoteAdapter } from '@canton-network/dapp-sdk'
 import { AccountPanel } from '@/components/AccountPanel'
+import { NoteForm } from '@/components/NoteForm'
 import { WALLET_GATEWAY_URL } from '@/utils/config'
 
 const connectConfig: CantonConnectConfig = {
@@ -21,6 +22,7 @@ export const App = (): React.JSX.Element => (
         </header>
         <main className="mx-auto max-w-2xl space-y-6 px-6 py-10">
           <AccountPanel />
+          <NoteForm />
         </main>
       </div>
     </CantonConnectProvider>
