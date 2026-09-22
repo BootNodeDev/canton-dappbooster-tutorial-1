@@ -1,0 +1,36 @@
+{
+  "name": "cn-dappbooster",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "app:dev": "pnpm -C dapp/frontend run dev",
+    "bootstrap": "node scripts/bootstrap-vesting.mjs",
+    "build-dar": "pnpm -C dapp/daml run build",
+    "build": "pnpm -r run --if-present build",
+    "deploy-dar": "bash scripts/deploy-dar.sh",
+    "knip": "knip",
+    "lint:fix": "biome check --write",
+    "lint": "biome check --error-on-warnings",
+    "mint-token": "node scripts/mint-token.mjs ledger-api-user",
+    "prepare": "husky",
+    "test": "pnpm -r run --if-present test && node --test \"scripts/**/*.test.mjs\" \"kit/**/*.test.mjs\"",
+    "typecheck": "pnpm -r run --if-present typecheck",
+    "wallet-gateway": "mkdir -p .wallet-gateway && wallet-gateway -c ./wallet-gateway.config.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@bootnodedev/canton-barebones": "0.6.0",
+    "@canton-network/wallet-gateway-remote": "1.11.3",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "husky": "^9.1.7",
+    "knip": "6.37.0",
+    "lint-staged": "^17.0.4",
+    "typescript": "^5.9.3"
+  }
+}
