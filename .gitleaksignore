@@ -38,3 +38,4 @@ e32f531bdfb85087ddb7b60827d04e83d8228745:canton-barebones/test/mint-token.test.m
 e32f531bdfb85087ddb7b60827d04e83d8228745:canton-barebones/wallet-service/test/canton-token.test.ts:jwt:20
 e32f531bdfb85087ddb7b60827d04e83d8228745:canton-barebones/wallet-service/test/smoke.test.ts:jwt:70
 f06440cf962b2674f131b4626f899a30c2c18912:carpincho-wallet/test/components/AssetsPanel.test.tsx:generic-api-key:277
+f2d174f89cb5686f5a69874d918b0db0d3d0d7e8:scripts/mint-token.test.mjs:jwt:27

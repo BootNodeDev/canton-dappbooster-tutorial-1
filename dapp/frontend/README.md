@@ -1,54 +1,45 @@
-# @canton-dappbooster/frontend — Amulet vesting dApp
+# @canton-dappbooster/frontend — Notes
 
-dApp for **Amulet vesting**: propose a grant, the receiver accepts, claim as it
-vests, or cancel into a residual claim. Accepting locks the funder's Amulet in
-escrow and each claim releases part of it, so the figures on screen are real
-holdings; grants render live vested/claimable figures from the pure schedule math in
-[`src/utils/schedule.ts`](src/utils/schedule.ts).
+One party writes a note for another. The reader acknowledges it and the note is archived.
 
-Every read and every write goes through the connected CIP-0103 wallet, so the app acts as
-the wallet's primary account and each write raises a real approval prompt. There is no
-mock mode: without a deployment config and a wallet session the pages show a connect
-placeholder. See the root [README](../../README.md) for the wider stack.
-
-> The frontend was imported from `cn-dappbooster@feat/vesting-lite` — see
-> [`PROVENANCE.md`](PROVENANCE.md). The DAML package it speaks to lives in
-> [`../daml`](../daml).
+Every read and every write goes through the connected CIP-0103 wallet, so the app acts as the
+wallet's primary account and each write raises an approval prompt. Changing the wallet's primary
+party changes the party the app acts as.
 
 ## Run
 
-The app needs a Canton LocalNet, the Wallet Gateway and the vesting DAR deployed before it
-renders anything; the root [README](../../README.md) is the whole bring-up. Once that is up,
-from the repo root (one `pnpm install` links every workspace):
+The app needs a Canton LocalNet, the Wallet Gateway and the `note` DAR on the participant before it
+does anything. From the repo root:
 
 ```bash
-pnpm run build-dar
-# use the appropriate version for amulet-vesting-*.dar
-pnpm run deploy-dar -- dapp/daml/.daml/dist/amulet-vesting-*.dar
-pnpm run bootstrap        # creates the operator and its factory
+node scripts/localnet-config.mjs .canton-localnet
+cd .canton-localnet && pnpm exec canton-barebones start
+```
+
+```bash
 pnpm run wallet-gateway   # → http://localhost:3030
+```
+
+```bash
 pnpm run app:dev          # → http://localhost:3012
 ```
 
-The bootstrap writes nothing. It leaves the operator and the factory on the ledger, and the dApp
-finds both once a wallet connects: the operator through the rights the bootstrap granted, the
-factory through an active-contracts read that returns its explicit-disclosure payload, without
-which a grant cannot be created. Re-running it supersedes the last one, on any ledger.
+Build the contract and upload it, from the repo root:
 
-Funding a grant takes Amulet, and the account menu has a faucet for it: **Tap Amulet** taps
-100 AMT into the connected party.
-It works on LocalNet and devnet, where the choice exists, and refuses until the SV has opened the
-first mining round, roughly ten minutes after a fresh start.
+```bash
+cd dapp/daml
+dpm build
+cd ../..
+export CANTON_BACKEND_TOKEN=$(node scripts/mint-token.mjs ledger-api-user | awk 'NR==1')
+curl -X POST http://localhost:2975/v2/packages \
+  -H "Authorization: Bearer $CANTON_BACKEND_TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary "@dapp/daml/.daml/dist/note-1.0.0.dar"
+```
 
-Connect with a CIP-0103 wallet — the Wallet Gateway on http://localhost:3030 is the one the dev
-stack starts. Create its parties with the `wallet-kernel` signing provider; a `participant` one
-has its Amulets merged out from under a pending grant (see the root README). The party it reports is the one you act as, and the session is restored on reload by
-the wallet itself. Changing the wallet's primary party changes the party the dApp acts as. Its
-three env knobs — the explorer party ids link to, the gateway's dApp API, and Scan's API — default
-to the local stack and are set in the repo root's `.env`; see the root
-[`.env.example`](../../.env.example).
+Connect with the Wallet Gateway and log in with the client secret `unsafe`. You need two parties,
+both created with `wallet-kernel` as the signing provider. A party takes about a minute after
+creation before it can be used in a transaction.
 
-## How it fits together
-
-The internal seams and the reasoning behind them are in
-[`architecture.md`](architecture.md).
+The gateway's dApp API url is the one env knob the app reads, and it defaults to the local stack.
+It is set in the repo root's [`.env`](../../.env.example).
