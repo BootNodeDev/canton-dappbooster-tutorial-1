@@ -1,0 +1,235 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "canton-connect/**",
+      "canton-dappbooster/**",
+      "canton-theme/**",
+      "dapp/frontend/**",
+      "kit/**",
+      "scripts/**",
+      "!**/api-specs",
+      "!**/*.svg"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": true,
+            "filenameCases": ["camelCase", "PascalCase"]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["kit/**", "**/scripts/**", "**/*.d.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": {
+              "level": "error",
+              "options": {
+                "strictCase": true,
+                "filenameCases": ["camelCase", "kebab-case", "PascalCase"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["dapp/frontend/**"],
+      "css": {
+        "parser": {
+          "cssModules": false,
+          "tailwindDirectives": true
+        }
+      },
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          },
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["canton-connect/**", "canton-dappbooster/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+                    "message": "Do not include the file extension in imports."
+                  },
+                  {
+                    "group": [".", "..", "./*", "./**", "../*", "../**"],
+                    "message": "Reach an internal module through this package's #src/* subpath imports."
+                  },
+                  {
+                    "group": ["@/*", "@/**"],
+                    "message": "@/ is the app's alias and resolves into the consumer's tree here. Use #src/*."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["dapp/frontend/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+                    "message": "Do not include the file extension in imports."
+                  },
+                  {
+                    "group": [".", "..", "./*", "./**", "../*", "../**"],
+                    "message": "Reach an intra-src module through the @/ alias."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "canton-connect/src/**",
+        "canton-dappbooster/src/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/testing/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+                    "message": "Do not include the file extension in imports."
+                  },
+                  {
+                    "group": [".", "..", "./*", "./**", "../*", "../**"],
+                    "message": "Reach an internal module through this package's #src/* subpath imports."
+                  },
+                  {
+                    "group": ["@/*", "@/**"],
+                    "message": "@/ is the app's alias and resolves into the consumer's tree here. Use #src/*."
+                  },
+                  {
+                    "group": ["**/testing/**"],
+                    "message": "testing/ is test-only. Do not import it from source."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["dapp/frontend/src/**", "!**/*.test.ts", "!**/*.test.tsx", "!**/testing/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+                    "message": "Do not include the file extension in imports."
+                  },
+                  {
+                    "group": [".", "..", "./*", "./**", "../*", "../**"],
+                    "message": "Reach an intra-src module through the @/ alias."
+                  },
+                  {
+                    "group": ["**/testing/**"],
+                    "message": "testing/ is test-only. Do not import it from source."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/src/icons/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": {
+              "level": "error",
+              "options": {
+                "filenameCases": ["export"],
+                "match": "([A-Z].*?)[.](.+)"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/src/hooks/*.ts", "**/src/hooks/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": {
+              "level": "error",
+              "options": {
+                "filenameCases": ["camelCase"],
+                "match": "(index|use[A-Z].*?)[.](.+)"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

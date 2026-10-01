@@ -1,0 +1,57 @@
+# dependencies
+node_modules/
+
+# gitleaks binary, installed by scripts/install-gitleaks.sh
+/bin/
+
+# build output
+dist/
+dist-extension/
+typedoc/
+
+# canton-barebones: its scaffolded config, the Splice checkout and the runtime env
+.canton-localnet/
+
+# wallet-gateway: its sqlite wallet and signing stores
+.wallet-gateway/
+
+# env
+.env
+.env.local
+.env.fivenorth
+
+# typescript
+*.tsbuildinfo
+
+# misc
+.DS_Store
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+
+# worktrees
+.worktrees/
+
+# LLM
+CLAUDE.local.md
+AGENTS.local.md
+.claude/settings.local.json
+.vercel
+
+# local design specs
+docs/
+
+# playwright (MCP browser artifacts + screenshots)
+**/.playwright-mcp/
+test-results/
+playwright-report/
+# stray captures land at the repo root; no tracked image belongs there
+/*.png
+
+# brainstorming visual companion
+.superpowers/
+
+# vitest coverage output
+coverage/

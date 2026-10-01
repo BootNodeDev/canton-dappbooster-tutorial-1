@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["postcss"],
+  "ignoreBinaries": ["dpm"],
+  "ignoreWorkspaces": ["dapp/daml"],
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.mjs!", "kit/**/*.mjs!", ".lintstagedrc.format.mjs"]
+    },
+    "canton-connect": {
+      "entry": ["src/**/*.test.{ts,tsx}"]
+    },
+    "canton-dappbooster": {
+      "entry": ["src/**/*.test.{ts,tsx}", "scripts/*.mjs!"]
+    }
+  }
+}
